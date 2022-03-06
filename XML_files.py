@@ -15,23 +15,52 @@ class Read_xml():
         self.xml = xml
         root = Et.parse(self.xml).getroot()
         nsNFe = {"ns":"http://www.portalfiscal.inf.br/nfe"}
+        nsCTe = {"ns":"http://www.portalfiscal.inf.br/cte"}
 
-        self.chave = self.check_none(root.find('./ns:protNFe/ns:infProt/ns:chNFe', nsNFe))
-        nfe = self.check_none(root.find("./ns:NFe/ns:infNFe/ns:ide/ns:nNF", nsNFe))
-        nome_emit = self.check_none(root.find('./ns:NFe/ns:infNFe/ns:emit/ns:xNome', nsNFe))
+        chaveNfe = self.check_none(root.find('./ns:protNFe/ns:infProt/ns:chNFe', nsNFe))
+        chaveCte = self.check_none(root.find('./ns:protCTe/ns:infProt/ns:chCTe', nsCTe))
 
+        #Inicia Conexão com banco de dados
         dbdb = data_base.DataBase()
         dbdb.conecta()
-        if dbdb.check_nota(self.chave) == 'Não existe':
-            with open('Relatório de importação.txt', 'a') as arq:
-                arq.write(f'Importada com sucesso NF-e n° {nfe} emitida por {nome_emit}, {self.chave} \n')
-                arq.close()
-                self.nfe_data(self.xml)
+
+        if chaveNfe != '':
+            self.chave = chaveNfe
+            nfe = self.check_none(root.find("./ns:NFe/ns:infNFe/ns:ide/ns:nNF", nsNFe))
+            nome_emit = self.check_none(root.find('./ns:NFe/ns:infNFe/ns:emit/ns:xNome', nsNFe))
+
+            if dbdb.check_nota(self.chave) == 'Não existe':
+                with open('Relatório de importação.txt', 'a') as arq:
+                    arq.write(f'Importada com sucesso NF-e n° {nfe} emitida por {nome_emit}, {self.chave} \n')
+                    arq.close()
+                    self.nfe_data(self.xml)
+
+            else:
+                with open('Relatório de importação.txt', 'a') as arq:
+                    arq.write(f'ESTA NOTA JÁ EXISTE! {nfe} emitida por {nome_emit}, {self.chave} \n')
+                    arq.close()
+
+        elif chaveCte != '':
+            self.chave = chaveCte
+            nCt = self.check_none(root.find('./ns:CTe/ns:infCte/ns:ide/ns:nCT', nsCTe))
+            nome_emit = self.check_none(root.find('./ns:CTe/ns:infCte/ns:emit/ns:xNome', nsCTe))
+
+            dbdb = data_base.DataBase()
+            dbdb.conecta()
+            if dbdb.check_cte(self.chave) == 'Não existe':
+                with open('Relatório de importação.txt', 'a') as arq:
+                    arq.write(f'Importada com sucesso NF-e n° {nCt} emitida por {nome_emit}, {self.chave} \n')
+                    arq.close()
+                    self.cte_data(self.xml)
+
+            else:
+                with open('Relatório de importação.txt', 'a') as arq:
+                    arq.write(f'ESTA NOTA JÁ EXISTE! {nfe} emitida por {nome_emit}, {self.chave} \n')
+                    arq.close()
 
         else:
-            with open('Relatório de importação.txt', 'a') as arq:
-                arq.write(f'ESTA NOTA JÁ EXISTE! {nfe} emitida por {nome_emit}, {self.chave} \n')
-                arq.close()
+            print(f'Não identificado provavelmente não se trata de NF-e ou CT-e {self.xml}')
+            quit()
 
         dbdb.close_conection()
 
@@ -376,14 +405,284 @@ class Read_xml():
             dbdb.insert_nfe_produto(*produtos)
             dbdb.close_conection()
 
+    def cte_data(self, xml):
+        root = Et.parse(xml).getroot()
+        nsCTe = {'ns':'http://www.portalfiscal.inf.br/cte'}
+
+        #Dados CT-e
+        chave = self.check_none(root.find('./ns:protCTe/ns:infProt/ns:chCTe', nsCTe))
+        nCt = self.check_none(root.find('./ns:CTe/ns:infCte/ns:ide/ns:nCT', nsCTe))
+        cUF = self.check_none(root.find('./ns:CTe/ns:infCte/ns:ide/ns:cUF', nsCTe))
+        cFOP = self.check_none(root.find('./ns:CTe/ns:infCte/ns:ide/ns:CFOP', nsCTe))
+        natOp = self.check_none(root.find('./ns:CTe/ns:infCte/ns:ide/ns:natOp', nsCTe))
+        cmod = self.check_none(root.find('./ns:CTe/ns:infCte/ns:ide/ns:mod', nsCTe))
+        serie = self.check_none(root.find('./ns:CTe/ns:infCte/ns:ide/ns:serie', nsCTe))
+        data_emissao = self.check_none(root.find('./ns:CTe/ns:infCte/ns:ide/ns:dhEmi', nsCTe))
+        data_emissao = f'{data_emissao[8:10]}/{data_emissao[5:7]}/{data_emissao[:4]}'
+        tp_ct = self.check_none(root.find('./ns:CTe/ns:infCte/ns:ide/ns:tpImp', nsCTe))#Preencher com: 1 - Retrato; 2 - Paisagem
+        tp_emi = self.check_none(root.find('./ns:CTe/ns:infCte/ns:ide/ns:tpEmis', nsCTe)) #Forma de emissão: 1 - Normal; 2 - Contingência FS; 7- Autorização pela SVC-RS; 8 - Autorização pela SVC-SP
+        tp_amb = self.check_none(root.find('./ns:CTe/ns:infCte/ns:ide/ns:tpAmb', nsCTe)) #1 - Produção; 2 - Homologação
+        ind_ie_tom = self.check_none(root.find('./ns:CTe/ns:infCte/ns:ide/ns:indIEToma', nsCTe))#1 – Contribuinte ICMS;2 – Contribuinte isento de inscrição;9 – Não Contribuinte
+        data_saida = self.check_none(root.find('./ns:CTe/ns:infCte/ns:ide/ns:dhSaidaOrig', nsCTe))
+        if data_saida != '':
+            data_saida = f'{data_saida[8:10]}/{data_saida[5:7]}/{data_saida[:4]}'
+        else:
+            data_saida = None
+
+        #emitente
+        cNPJ_em = self.format_cnpj_cpf(self.check_none(root.find('./ns:CTe/ns:infCte/ns:emit/ns:CNPJ', nsCTe)))
+        iE_em = self.check_none(root.find('./ns:CTe/ns:infCte/ns:emit/ns:IE', nsCTe))
+        iES_em = self.check_none(root.find('./ns:CTe/ns:infCte/ns:emit/ns:IEST', nsCTe))#I.E. S.T.
+        nom_em = self.check_none(root.find('./ns:CTe/ns:infCte/ns:emit/ns:xNome', nsCTe))
+        fan_em = self.check_none(root.find('./ns:CTe/ns:infCte/ns:emit/ns:xFant', nsCTe))
+        rua_em = self.check_none(root.find('./ns:CTe/ns:infCte/ns:emit/ns:enderEmit/ns:xLgr', nsCTe))
+        n_em = self.check_none(root.find('./ns:CTe/ns:infCte/ns:emit/ns:enderEmit/ns:nro', nsCTe))
+        cpl_em = self.check_none(root.find('./ns:CTe/ns:infCte/ns:emit/ns:enderEmit/ns:Cpl', nsCTe))
+        bair_em = self.check_none(root.find('./ns:CTe/ns:infCte/ns:emit/ns:enderEmit/ns:xBairro', nsCTe))
+        cmun_em = self.check_none(root.find('./ns:CTe/ns:infCte/ns:emit/ns:enderEmit/ns:cMun', nsCTe))
+        mun_em = self.check_none(root.find('./ns:CTe/ns:infCte/ns:emit/ns:enderEmit/ns:xMun', nsCTe))
+        cep_em = self.check_none(root.find('./ns:CTe/ns:infCte/ns:emit/ns:enderEmit/ns:CEP', nsCTe))
+        uF_em = self.check_none(root.find('./ns:CTe/ns:infCte/ns:emit/ns:enderEmit/ns:UF', nsCTe))
+        fone_em = self.check_none(root.find('./ns:CTe/ns:infCte/ns:emit/ns:enderEmit/ns:fone', nsCTe))
+
+        #Identifica o caminho para obter os dados do tomador
+        tomador = root.find('./ns:CTe/ns:infCte/ns:ide/ns:toma3/ns:toma', nsCTe).text# 0-Remetente; 1-Expedidor; 2-Recebedor; 3-Destinatário; 4-Outros
+
+        if tomador == '0': 
+            end_1 = './ns:CTe/ns:infCte/ns:rem/'
+            end_2 = './ns:CTe/ns:infCte/ns:rem/ns:enderReme/'
+            toma = 'Remetente'
+        elif tomador == '1':
+            end_1 = './ns:CTe/ns:infCte/ns:exped/'
+            end_2 = '/ns:CTe/ns:infCte/ns:exped/ns:enderExped/'
+            toma = 'Expedidor'
+        elif tomador == '2':
+            end_1 = './ns:CTe/ns:infCte/ns:receb/'
+            end_2 = './ns:CTe/ns:infCte/ns:receb/ns:enderReceb/'
+            toma = 'Recebedor'
+        elif tomador == '3':
+            end_1 = './ns:CTe/ns:infCte/ns:dest/'
+            end_2 = './ns:CTe/ns:infCte/ns:dest/ns:enderDest/'
+            toma = 'Destinatario'
+        elif tomador == '4':
+            end_1 = './ns:CTe/ns:infCte/ns:ide/ns:toma4/'
+            end_2 = './ns:CTe/ns:infCte/ns:ide/ns:toma4/ns:enderToma/'
+            tomador = 'Outros'
+        else:
+            print('erro ao identificar o tomador')
+
+        #Registra os objetos referente ao tomador de acordo com o caminho especificado
+        if self.check_none(root.find(f'{end_1}ns:CNPJ', nsCTe)) != '':
+            doc_to = self.format_cnpj_cpf(self.check_none(root.find(f'{end_1}ns:CNPJ', nsCTe)))
+        elif  self.check_none(root.find(f'{end_1}ns:CPF', nsCTe)) != '':
+            doc_to = self.format_cnpj_cpf(self.check_none(root.find(f'{end_1}ns:CPF', nsCTe)))
+        else:
+            print('erro na definição do CPF ou CNPJ do tomador')
+            quit()
+
+        ident_to = toma
+        iE_to = self.check_none(root.find(f'{end_1}ns:IE', nsCTe))
+        nom_to = self.check_none(root.find(f'{end_1}ns:xNome', nsCTe))
+        fan_to = self.check_none(root.find(f'{end_1}ns:xFant', nsCTe))
+        fone_to = self.check_none(root.find(f'{end_1}ns:fone', nsCTe))
+        email_to = self.check_none(root.find(f'{end_1}ns:email', nsCTe))
+        rua_to = self.check_none(root.find(f'{end_2}ns:xLgr', nsCTe))
+        n_to = self.check_none(root.find(f'{end_2}ns:nro', nsCTe))
+        cpl_to = self.check_none(root.find(f'{end_2}ns:Cpl', nsCTe))
+        bair_to = self.check_none(root.find(f'{end_2}ns:xBairro', nsCTe))
+        cmun_to = self.check_none(root.find(f'{end_2}ns:cMun', nsCTe))
+        mun_to = self.check_none(root.find(f'{end_2}ns:xMun', nsCTe))
+        cep_to = self.check_none(root.find(f'{end_2}ns:CEP', nsCTe))
+        uF_to = self.check_none(root.find(f'{end_2}ns:UF', nsCTe))
+        cpAis_to = self.check_none(root.find(f'{end_2}ns:cPais', nsCTe))
+        pAis_to = self.check_none(root.find(f'{end_2}ns:xPais', nsCTe))
+
+        #Remetente
+        if self.check_none(root.find('./ns:CTe/ns:infCte/ns:rem/ns:CNPJ', nsCTe)) != '':
+            doc_rem = self.format_cnpj_cpf(self.check_none(root.find('./ns:CTe/ns:infCte/ns:rem/ns:CNPJ', nsCTe)))
+        elif  self.check_none(root.find('./ns:NFe/ns:infNFe/ns:rem/ns:CPF', nsCTe)) != '':
+            doc_rem = self.format_cnpj_cpf(self.check_none(root.find('./ns:CTe/ns:infCte/ns:rem/ns:CPF', nsCTe)))
+        else:
+            print('erro na definição do remetente')
+            quit()
+
+        iE_rem = self.check_none(root.find('./ns:CTe/ns:infCte/ns:rem/ns:IE', nsCTe))
+        nom_rem = self.check_none(root.find('./ns:CTe/ns:infCte/ns:rem/ns:xNome', nsCTe))
+        fan_rem = self.check_none(root.find('./ns:CTe/ns:infCte/ns:rem/ns:xFant', nsCTe))
+        fone_rem = self.check_none(root.find('./ns:CTe/ns:infCte/ns:rem/ns:fone', nsCTe))
+        email_rem = self.check_none(root.find('./ns:CTe/ns:infCte/ns:rem/ns:email', nsCTe))
+        rua_rem = self.check_none(root.find('./ns:CTe/ns:infCte/ns:rem/ns:enderReme/ns:xLgr', nsCTe))
+        n_rem = self.check_none(root.find('./ns:CTe/ns:infCte/ns:rem/ns:enderReme/ns:nro', nsCTe))
+        cpl_rem = self.check_none(root.find('./ns:CTe/ns:infCte/ns:rem/ns:enderReme/ns:Cpl', nsCTe))
+        bair_rem = self.check_none(root.find('./ns:CTe/ns:infCte/ns:rem/ns:enderReme/ns:xBairro', nsCTe))
+        cmun_rem = self.check_none(root.find('./ns:CTe/ns:infCte/ns:rem/ns:enderReme/ns:cMun', nsCTe))
+        mun_rem = self.check_none(root.find('./ns:CTe/ns:infCte/ns:rem/ns:enderReme/ns:xMun', nsCTe))
+        cep_rem = self.check_none(root.find('./ns:CTe/ns:infCte/ns:rem/ns:enderReme/ns:CEP', nsCTe))
+        uF_rem = self.check_none(root.find('./ns:CTe/ns:infCte/ns:rem/ns:enderReme/ns:UF', nsCTe))
+        cPais_rem = self.check_none(root.find('./ns:CTe/ns:infCte/ns:rem/ns:enderReme/ns:cPais', nsCTe))
+        xPais_rem = self.check_none(root.find('./ns:CTe/ns:infCte/ns:rem/ns:enderReme/ns:xPais', nsCTe))
+
+        #Expedidor
+        if self.check_none(root.find('./ns:CTe/ns:infCte/ns:exped/ns:CNPJ', nsCTe)) != '':
+            doc_exp = self.format_cnpj_cpf(self.check_none(root.find('./ns:CTe/ns:infCte/ns:exped/ns:CNPJ', nsCTe)))
+        elif  self.check_none(root.find('./ns:NFe/ns:infNFe/ns:exped/ns:CPF', nsCTe)) != '':
+            doc_exp = self.format_cnpj_cpf(self.check_none(root.find('./ns:CTe/ns:infCte/ns:exped/ns:CPF', nsCTe)))
+        else:
+            doc_exp = None
+            print('Não registrado Expedidor')
+                
+        iE_exp = self.check_none(root.find('./ns:CTe/ns:infCte/ns:exped/ns:IE', nsCTe))
+        nom_exp = self.check_none(root.find('./ns:CTe/ns:infCte/ns:exped/ns:xNome', nsCTe))
+        fan_exp = self.check_none(root.find('./ns:CTe/ns:infCte/ns:exped/ns:xFant', nsCTe))
+        fone_exp = self.check_none(root.find('./ns:CTe/ns:infCte/ns:exped/ns:fone', nsCTe))
+        email_exp = self.check_none(root.find('./ns:CTe/ns:infCte/ns:exped/ns:email', nsCTe))
+        rua_exp = self.check_none(root.find('./ns:CTe/ns:infCte/ns:exped/ns:enderExped/ns:xLgr', nsCTe))
+        n_exp = self.check_none(root.find('./ns:CTe/ns:infCte/ns:exped/ns:enderExped/ns:nro', nsCTe))
+        cpl_exp = self.check_none(root.find('./ns:CTe/ns:infCte/ns:exped/ns:enderExped/ns:Cpl', nsCTe))
+        bair_exp = self.check_none(root.find('./ns:CTe/ns:infCte/ns:exped/ns:enderExped/ns:xBairro', nsCTe))
+        cmun_exp = self.check_none(root.find('./ns:CTe/ns:infCte/ns:exped/ns:enderExped/ns:cMun', nsCTe))
+        mun_exp = self.check_none(root.find('./ns:CTe/ns:infCte/ns:exped/ns:enderExped/ns:xMun', nsCTe))
+        cep_exp = self.check_none(root.find('./ns:CTe/ns:infCte/ns:exped/ns:enderExped/ns:CEP', nsCTe))
+        uF_exp = self.check_none(root.find('./ns:CTe/ns:infCte/ns:exped/ns:enderExped/ns:UF', nsCTe))
+        cPais_exp = self.check_none(root.find('./ns:CTe/ns:infCte/ns:exped/ns:enderExped/ns:cPais', nsCTe))
+        xPais_exp = self.check_none(root.find('./ns:CTe/ns:infCte/ns:exped/ns:enderExped/ns:xPais', nsCTe))
+
+        #Recebedor
+        if self.check_none(root.find('./ns:CTe/ns:infCte/ns:receb/ns:CNPJ', nsCTe)) != '':
+            doc_rec = self.format_cnpj_cpf(self.check_none(root.find('./ns:CTe/ns:infCte/ns:receb/ns:CNPJ', nsCTe)))
+        elif  self.check_none(root.find('./ns:NFe/ns:infNFe/ns:receb/ns:CPF', nsCTe)) != '':
+            doc_rec = self.format_cnpj_cpf(self.check_none(root.find('./ns:CTe/ns:infCte/ns:receb/ns:CPF', nsCTe)))
+        else:
+            doc_rec = None
+            print('Recebedor não registrado')
+
+        iE_rec = self.check_none(root.find('./ns:CTe/ns:infCte/ns:receb/ns:IE', nsCTe))
+        nom_rec = self.check_none(root.find('./ns:CTe/ns:infCte/ns:receb/ns:xNome', nsCTe))
+        fan_rec = self.check_none(root.find('./ns:CTe/ns:infCte/ns:receb/ns:xFant', nsCTe))
+        fone_rec = self.check_none(root.find('./ns:CTe/ns:infCte/ns:receb/ns:fone', nsCTe))
+        email_rec = self.check_none(root.find('./ns:CTe/ns:infCte/ns:receb/ns:email', nsCTe))
+        rua_rec = self.check_none(root.find('./ns:CTe/ns:infCte/ns:receb/ns:enderReceb/ns:xLgr', nsCTe))
+        n_rec = self.check_none(root.find('./ns:CTe/ns:infCte/ns:receb/ns:enderReceb/ns:nro', nsCTe))
+        cpl_rec = self.check_none(root.find('./ns:CTe/ns:infCte/ns:receb/ns:enderReceb/ns:Cpl', nsCTe))
+        bair_rec = self.check_none(root.find('./ns:CTe/ns:infCte/ns:receb/ns:enderReceb/ns:xBairro', nsCTe))
+        cmun_rec = self.check_none(root.find('./ns:CTe/ns:infCte/ns:receb/ns:enderReceb/ns:cMun', nsCTe))
+        mun_rec = self.check_none(root.find('./ns:CTe/ns:infCte/ns:receb/ns:enderReceb/ns:xMun', nsCTe))
+        cep_rec = self.check_none(root.find('./ns:CTe/ns:infCte/ns:receb/ns:enderReceb/ns:CEP', nsCTe))
+        uF_rec = self.check_none(root.find('./ns:CTe/ns:infCte/ns:receb/ns:enderReceb/ns:UF', nsCTe))
+        cPais_rec = self.check_none(root.find('./ns:CTe/ns:infCte/ns:receb/ns:enderReceb/ns:cPais', nsCTe))
+        xPais_rec = self.check_none(root.find('./ns:CTe/ns:infCte/ns:receb/ns:enderReceb/ns:xPais', nsCTe))
+
+        #Destinatario
+        if self.check_none(root.find('./ns:CTe/ns:infCte/ns:dest/ns:CNPJ', nsCTe)) != '':
+            doc_dest = self.format_cnpj_cpf(self.check_none(root.find('./ns:CTe/ns:infCte/ns:dest/ns:CNPJ', nsCTe)))
+        elif  self.check_none(root.find('./ns:NFe/ns:infNFe/ns:dest/ns:CPF', nsCTe)) != '':
+            doc_dest = self.format_cnpj_cpf(self.check_none(root.find('./ns:CTe/ns:infCte/ns:dest/ns:CPF', nsCTe)))
+        else:
+            print('erro na definição do recebedor')
+            quit()
+
+        iE_dest = self.check_none(root.find('./ns:CTe/ns:infCte/ns:dest/ns:IE', nsCTe))
+        nom_dest = self.check_none(root.find('./ns:CTe/ns:infCte/ns:dest/ns:xNome', nsCTe))
+        fan_dest = self.check_none(root.find('./ns:CTe/ns:infCte/ns:dest/ns:xFant', nsCTe))
+        fone_dest = self.check_none(root.find('./ns:CTe/ns:infCte/ns:dest/ns:fone', nsCTe))
+        email_dest = self.check_none(root.find('./ns:CTe/ns:infCte/ns:dest/ns:email', nsCTe))
+        rua_dest = self.check_none(root.find('./ns:CTe/ns:infCte/ns:dest/ns:enderDest/ns:xLgr', nsCTe))
+        n_dest = self.check_none(root.find('./ns:CTe/ns:infCte/ns:dest/ns:enderDest/ns:nro', nsCTe))
+        cpl_dest = self.check_none(root.find('./ns:CTe/ns:infCte/ns:dest/ns:enderDest/ns:Cpl', nsCTe))
+        bair_dest = self.check_none(root.find('./ns:CTe/ns:infCte/ns:dest/ns:enderDest/ns:xBairro', nsCTe))
+        cmun_dest = self.check_none(root.find('./ns:CTe/ns:infCte/ns:dest/ns:enderDest/ns:cMun', nsCTe))
+        mun_dest = self.check_none(root.find('./ns:CTe/ns:infCte/ns:dest/ns:enderDest/ns:xMun', nsCTe))
+        cep_dest = self.check_none(root.find('./ns:CTe/ns:infCte/ns:dest/ns:enderDest/ns:CEP', nsCTe))
+        uF_dest = self.check_none(root.find('./ns:CTe/ns:infCte/ns:dest/ns:enderDest/ns:UF', nsCTe))
+        cPais_dest = self.check_none(root.find('./ns:CTe/ns:infCte/ns:dest/ns:enderDest/ns:cPais', nsCTe))
+        xPais_dest = self.check_none(root.find('./ns:CTe/ns:infCte/ns:dest/ns:enderDest/ns:xPais', nsCTe))
+
+        #Valores e impostos
+        vPrest = self.check_none(root.find('./ns:CTe/ns:infCte/ns:vPrest/ns:vTPrest', nsCTe))
+        vRec = self.check_none(root.find('./ns:CTe/ns:infCte/ns:vPrest/ns:vRec', nsCTe)) #Valor a receber
+
+        #Encontrar CST
+        codigos = ['/ns:ICMS00', '/ns:ICMS20', '/ns:ICMS45', '/ns:ICMS60', '/ns:ICMS90', '/ns:ICMSOutraUF', '/ns:ICMSSN']
+        for cada in codigos:
+            if self.check_none(root.find(f'./ns:CTe/ns:infCte/ns:imp/ns:ICMS{cada}', nsCTe)) == '':
+                pass
+            else:
+                cst_csosn = self.check_none(root.find(f'./ns:CTe/ns:infCte/ns:imp/ns:ICMS{cada}/ns:CST', nsCTe))
+                red_bc = self.check_none(root.find(f'./ns:CTe/ns:infCte/ns:imp/ns:ICMS{cada}/ns:pRedBC', nsCTe))
+                bc_icms = self.check_none(root.find(f'./ns:CTe/ns:infCte/ns:imp/ns:ICMS{cada}/ns:vBC', nsCTe))
+                alq_icms = self.check_none(root.find(f'./ns:CTe/ns:infCte/ns:imp/ns:ICMS{cada}/ns:pICMS', nsCTe))
+                v_icms = self.check_none(root.find(f'./ns:CTe/ns:infCte/ns:imp/ns:ICMS{cada}/ns:vICMS', nsCTe))
+                #ICMS S.T.
+                vBCstRet = self.check_none(root.find(f'./ns:CTe/ns:infCte/ns:imp/ns:ICMS{cada}/ns:vBCSTRet', nsCTe))
+                vICMSret = self.check_none(root.find(f'./ns:CTe/ns:infCte/ns:imp/ns:ICMS{cada}/ns:vICMSSTRet', nsCTe))
+                alq_ICMSret = self.check_none(root.find(f'./ns:CTe/ns:infCte/ns:imp/ns:ICMS{cada}/ns:pICMSSTRet', nsCTe))
+                credST = self.check_none(root.find(f'./ns:CTe/ns:infCte/ns:imp/ns:ICMS{cada}/ns:vCred', nsCTe))
+                #OutraUF
+                redBCoutraUF = self.check_none(root.find(f'./ns:CTe/ns:infCte/ns:imp/ns:ICMS{cada}/ns:pRedBCOutraUF', nsCTe))
+                vBCoutraUF = self.check_none(root.find(f'./ns:CTe/ns:infCte/ns:imp/ns:ICMS{cada}/ns:vBCOutraUF', nsCTe))
+                alq_OutraUF = self.check_none(root.find(f'./ns:CTe/ns:infCte/ns:imp/ns:ICMS{cada}/ns:pICMSOutraUF', nsCTe))
+                vICMSoutraUF = self.check_none(root.find(f'./ns:CTe/ns:infCte/ns:imp/ns:ICMS{cada}/ns:vICMSOutraUF', nsCTe))
+                #Indica se é SN
+                indSN = self.check_none(root.find(f'./ns:CTe/ns:infCte/ns:imp/ns:ICMS{cada}/ns:indSN', nsCTe))
         
+        vTotTribICMS = self.check_none(root.find('./ns:CTe/ns:infCte/ns:imp/ns:ICMS/ns:vTotTrib', nsCTe))
+        infAdFisc = self.check_none(root.find('./ns:CTe/ns:infCte/ns:imp/ns:ICMS/ns:infAdFisco', nsCTe))
+        #ICMS UF fim
+        vBCUFfim = self.check_none(root.find('./ns:CTe/ns:infCte/ns:imp/ns:ICMSUFFim/ns:vBCUFFim', nsCTe))
+        alqPCPUFfim = self.check_none(root.find('./ns:CTe/ns:infCte/ns:imp/ns:ICMSUFFim/ns:pFCPUFFim', nsCTe))
+        alqUFfim = self.check_none(root.find('./ns:CTe/ns:infCte/ns:imp/ns:ICMSUFFim/ns:pICMSUFFim', nsCTe))
+        alqInt = self.check_none(root.find('./ns:CTe/ns:infCte/ns:imp/ns:ICMSUFFim/ns:pICMSInter', nsCTe))
+        vFCPUFfim = self.check_none(root.find('./ns:CTe/ns:infCte/ns:imp/ns:ICMSUFFim/ns:vFCPUFFim', nsCTe))
+        vICMSUFfim = self.check_none(root.find('./ns:CTe/ns:infCte/ns:imp/ns:ICMSUFFim/ns:vICMSUFFim', nsCTe))
+        vICMSUFini = self.check_none(root.find('./ns:CTe/ns:infCte/ns:imp/ns:ICMSUFFim/ns:vICMSUFIni', nsCTe))
 
+        #Informações da carga
+        vCarga = self.check_none(root.find('./ns:CTe/ns:infCte/ns:infCTeNorm/ns:infCarga/ns:vCarga', nsCTe))
+        proPred = self.check_none(root.find('./ns:CTe/ns:infCte/ns:infCTeNorm/ns:infCarga/ns:proPred', nsCTe))
+        outCat = self.check_none(root.find('./ns:CTe/ns:infCte/ns:infCTeNorm/ns:infCarga/ns:xOutCat', nsCTe)) #Categoria 'FRIA', 'GRANEL', 'REFRIGERADA', 'Medidas: 12X12X12'
+        cUn = self.check_none(root.find('./ns:CTe/ns:infCte/ns:infCTeNorm/ns:infCarga/ns:infQ/ns:cUnid', nsCTe))#Código Unidade de Medida 00-M3; 01-KG; 02-TON; 03-UNIDADE; 04-LITROS; 05-MMBTU
+        tpMed = self.check_none(root.find('./ns:CTe/ns:infCte/ns:infCTeNorm/ns:infCarga/ns:infQ/ns:tpMed', nsCTe))#Ex: PESO BRUTO, PESO DECLARADO, PESO CUBADO, PESO AFORADO, PESO AFERIDO, PESO BASE DE CÁLCULO, LITRAGEM, CAIXAS e etc<
+        qtdCarga = self.check_none(root.find('./ns:CTe/ns:infCte/ns:infCTeNorm/ns:infCarga/ns:infQ/ns:qCarga', nsCTe))
+        vCargaAverb = self.check_none(root.find('./ns:CTe/ns:infCte/ns:infCTeNorm/ns:infCarga/ns:vCargaAverb', nsCTe)) #Valor da carga para efeito de averbação     Normalmente igual ao valor declarado da mercadoria, diferente por exemplo, quando a mercadoria transportada é isenta de tributos nacionais para exportação, onde é preciso averbar um valor maior, pois no caso de indenização, o valor a ser pago será maior
+
+        #Demais dados
+        data_importacao = datetime.now()
+        data_importacao = data_importacao.strftime('%d/%m/%Y, %H:%M:%S', )
+        usuario = str('bruno')
         
+        #Faturamento
+        nFat = self.check_none(root.find('./ns:CTe/ns:infCte/ns:infCTeNorm/ns:cobr/ns:fat/nFat', nsCTe))
+        vOrig = self.check_none(root.find('./ns:CTe/ns:infCte/ns:infCTeNorm/ns:cobr/ns:fat/nFat', nsCTe))
+        vDesc = self.check_none(root.find('./ns:CTe/ns:infCte/ns:infCTeNorm/ns:cobr/ns:fat/nFat', nsCTe))
+        vLiq = self.check_none(root.find('./ns:CTe/ns:infCte/ns:infCTeNorm/ns:cobr/ns:fat/nFat', nsCTe))
+
+        rntrc = self.check_none(root.find('./ns:CTe/ns:infCte/ns:infCTeNorm/ns:infModal/ns:rodo/ns:RNTRC', nsCTe))
+        var_cte = [chave, nCt, cUF, cFOP, natOp, cmod, serie, data_emissao, tp_ct, tp_emi, tp_amb, ind_ie_tom, data_saida, cNPJ_em, iE_em, iES_em, nom_em, fan_em, rua_em, n_em, cpl_em, bair_em, cmun_em, mun_em, cep_em, uF_em, fone_em, doc_to, ident_to, iE_to, nom_to, fan_to, fone_to, email_to, rua_to, n_to, cpl_to, bair_to, cmun_to, mun_to, cep_to, uF_to, cpAis_to, pAis_to, doc_rem, iE_rem, nom_rem, fan_rem, fone_rem, email_rem, rua_rem, n_rem, cpl_rem, bair_rem, cmun_rem, mun_rem, cep_rem, uF_rem, cPais_rem, xPais_rem, doc_exp, iE_exp, nom_exp, fan_exp, fone_exp, email_exp, rua_exp, n_exp, cpl_exp, bair_exp, cmun_exp, mun_exp, cep_exp, uF_exp, cPais_exp, xPais_exp, doc_rec, iE_rec, nom_rec, fan_rec, fone_rec, email_rec, rua_rec, n_rec, cpl_rec, bair_rec, cmun_rec, mun_rec, cep_rec, uF_rec, cPais_rec, xPais_rec, doc_dest, iE_dest, nom_dest, fan_dest, fone_dest, email_dest, rua_dest, n_dest, cpl_dest, bair_dest, cmun_dest, mun_dest, cep_dest, uF_dest, cPais_dest, xPais_dest, vPrest, vRec, cst_csosn, red_bc, bc_icms, alq_icms, v_icms, vBCstRet, vICMSret, alq_ICMSret, credST, redBCoutraUF, vBCoutraUF, alq_OutraUF, vICMSoutraUF, indSN, vTotTribICMS, infAdFisc, vBCUFfim, alqPCPUFfim, alqUFfim, alqInt, vFCPUFfim, vICMSUFfim, vICMSUFini, vCarga, proPred, outCat, cUn, tpMed, qtdCarga, vCargaAverb, nFat, vOrig, vDesc, vLiq, rntrc, data_importacao, usuario]
+
+        #Inicia conexão com banco de dados
+        dbdb = data_base.DataBase()
+        dbdb.conecta()
+        dbdb.insert_cte(*var_cte)
+
+        #Dados do documento transportado
+        for nota in root.findall('./ns:CTe/ns:infCte/ns:infCTeNorm/ns:infDoc/ns:infNFe', nsCTe):
+            chave_trans = self.check_none(nota.find('.ns:chave', nsCTe))
+            pin = self.check_none(nota.find('.ns:PIN', nsCTe))
+
+            notas_cte = [chave, chave_trans, pin, data_importacao, usuario]
+            dbdb.insert_docs_cte(*notas_cte)
+
+        #Duplicatas
+        for dup in root.findall('./ns:CTe/ns:infCte/ns:infCTeNorm/ns:cobr/ns:dup', nsCTe):
+            ndup = self.check_none(dup.find('.ns:nDup', nsCTe))
+            dvenc = self.check_none(dup.find('.ns:dVenc', nsCTe))
+            vdup = self.check_none(dup.find('.ns:vDup', nsCTe))
+
+            dup_cte = [chave, ndup, dvenc, vdup, data_importacao, usuario]
+            dbdb.insert_dupl_cte(*dup_cte)
 
 
-
-
-
+        dbdb.close_conection()
 
 
     def check_none(self, var):

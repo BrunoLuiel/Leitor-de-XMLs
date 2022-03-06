@@ -310,7 +310,193 @@ class DataBase():
         );
         """
         )
+    
+    def create_table_cte(self):
+        cursor = self.connection.cursor()
+        cursor.execute(f""" 
+        CREATE TABLE IF NOT EXISTS cte(
 
+            chave TEXT UNIQUE NOT NULL,
+            nCt TEXT,
+            cUF TEXT, 
+            cFOP TEXT, 
+            natOp TEXT, 
+            cmod TEXT, 
+            serie TEXT, 
+            data_emissao TEXT, 
+            tp_ct TEXT, 
+            tp_emi TEXT, 
+            tp_amb TEXT, 
+            ind_ie_tom TEXT, 
+            data_saida TEXT, 
+            cNPJ_em TEXT, 
+            iE_em TEXT, 
+            iES_em TEXT, 
+            nom_em TEXT, 
+            fan_em TEXT, 
+            rua_em TEXT, 
+            n_em TEXT, 
+            cpl_em TEXT, 
+            bair_em TEXT, 
+            cmun_em TEXT, 
+            mun_em TEXT, 
+            cep_em TEXT, 
+            uF_em TEXT, 
+            fone_em TEXT, 
+            doc_to TEXT, 
+            ident_to TEXT, 
+            iE_to TEXT, 
+            nom_to TEXT, 
+            fan_to TEXT, 
+            fone_to TEXT, 
+            email_to TEXT, 
+            rua_to TEXT, 
+            n_to TEXT, 
+            cpl_to TEXT, 
+            bair_to TEXT, 
+            cmun_to TEXT, 
+            mun_to TEXT, 
+            cep_to TEXT, 
+            uF_to TEXT, 
+            cpAis_to TEXT, 
+            pAis_to TEXT, 
+            doc_rem TEXT, 
+            iE_rem TEXT, 
+            nom_rem TEXT, 
+            fan_rem TEXT, 
+            fone_rem TEXT, 
+            email_rem TEXT, 
+            rua_rem TEXT, 
+            n_rem TEXT, 
+            cpl_rem TEXT, 
+            bair_rem TEXT, 
+            cmun_rem TEXT, 
+            mun_rem TEXT, 
+            cep_rem TEXT, 
+            uF_rem TEXT, 
+            cPais_rem TEXT, 
+            xPais_rem TEXT, 
+            doc_exp TEXT, 
+            iE_exp TEXT, 
+            nom_exp TEXT, 
+            fan_exp TEXT, 
+            fone_exp TEXT, 
+            email_exp TEXT, 
+            rua_exp TEXT, 
+            n_exp TEXT, 
+            cpl_exp TEXT, 
+            bair_exp TEXT, 
+            cmun_exp TEXT, 
+            mun_exp TEXT, 
+            cep_exp TEXT, 
+            uF_exp TEXT, 
+            cPais_exp TEXT, 
+            xPais_exp TEXT, 
+            doc_rec TEXT, 
+            iE_rec TEXT, 
+            nom_rec TEXT, 
+            fan_rec TEXT, 
+            fone_rec TEXT, 
+            email_rec TEXT, 
+            rua_rec TEXT, 
+            n_rec TEXT, 
+            cpl_rec TEXT, 
+            bair_rec TEXT, 
+            cmun_rec TEXT, 
+            mun_rec TEXT, 
+            cep_rec TEXT, 
+            uF_rec TEXT, 
+            cPais_rec TEXT, 
+            xPais_rec TEXT, 
+            doc_dest TEXT, 
+            iE_dest TEXT, 
+            nom_dest TEXT, 
+            fan_dest TEXT, 
+            fone_dest TEXT, 
+            email_dest TEXT, 
+            rua_dest TEXT, 
+            n_dest TEXT, 
+            cpl_dest TEXT, 
+            bair_dest TEXT, 
+            cmun_dest TEXT, 
+            mun_dest TEXT, 
+            cep_dest TEXT, 
+            uF_dest TEXT, 
+            cPais_dest TEXT, 
+            xPais_dest TEXT, 
+            vPrest TEXT, 
+            vRec TEXT, 
+            cst_csosn TEXT, 
+            red_bc TEXT, 
+            bc_icms TEXT, 
+            alq_icms TEXT, 
+            v_icms TEXT, 
+            vBCstRet TEXT, 
+            vICMSret TEXT, 
+            alq_ICMSret TEXT, 
+            credST TEXT, 
+            redBCoutraUF TEXT, 
+            vBCoutraUF TEXT, 
+            alq_OutraUF TEXT, 
+            vICMSoutraUF TEXT, 
+            indSN TEXT, 
+            vTotTribICMS TEXT, 
+            infAdFisc TEXT, 
+            vBCUFfim TEXT, 
+            alqPCPUFfim TEXT, 
+            alqUFfim TEXT, 
+            alqInt TEXT, 
+            vFCPUFfim TEXT, 
+            vICMSUFfim TEXT, 
+            vICMSUFini TEXT, 
+            vCarga TEXT, 
+            proPred TEXT, 
+            outCat TEXT, 
+            cUn TEXT, 
+            tpMed TEXT, 
+            qtdCarga TEXT, 
+            vCargaAverb TEXT, 
+            nFat TEXT, 
+            vOrig TEXT, 
+            vDesc TEXT, 
+            vLiq TEXT, 
+            rntrc TEXT,
+            data_importacao TEXT,
+            usuario TEXT
+            );
+        """
+        )
+    
+    def create_doc_cte(self): #Documento transportado pelo CTE
+        cursor = self.connection.cursor()
+        cursor.execute(f""" 
+        CREATE TABLE IF NOT EXISTS doc_trans(
+
+            chave TEXT,
+            chave_trans TEXT,
+            pin TEXT,
+            data_importacao TEXT,
+            usuario TEXT
+            );
+        """
+        )
+
+    def create_dpl_cte(self): #Duplicatas CTe
+        cursor = self.connection.cursor()
+        cursor.execute(f""" 
+        CREATE TABLE IF NOT EXISTS dpl_cte(
+
+            chave TEXT,
+            ndup TEXT,
+            dvenc TEXT,
+            vdup TEXT,
+            data_importacao TEXT,
+            usuario TEXT
+            );
+        """
+        )
+
+        
     def insert_nfe(self, *args):
 
         var_nfe_list = ('chave', 'nat_op', 'mod', 'nfe', 'serie', 'data_emissao', 'data_saient', 'tp_nf', 'cod_mun_fg', 'id_dest', 'tp_imp', 'tp_emi', 'tp_amb', 'fin_nfe', 'ind_pres', 
@@ -384,6 +570,51 @@ class DataBase():
             
         except AttributeError:
             print('Erro ao inserir as duplicatas')
+
+    def insert_cte(self, *args):
+
+        var_cte = ('chave', 'nCt', 'cUF', 'cFOP', 'natOp', 'cmod', 'serie', 'data_emissao', 'tp_ct', 'tp_emi', 'tp_amb', 'ind_ie_tom', 'data_saida', 'cNPJ_em', 'iE_em', 'iES_em', 'nom_em', 'fan_em', 'rua_em', 'n_em', 'cpl_em', 'bair_em', 'cmun_em', 'mun_em', 'cep_em', 'uF_em', 'fone_em', 'doc_to', 'ident_to', 'iE_to', 'nom_to', 'fan_to', 'fone_to', 'email_to', 'rua_to', 'n_to', 'cpl_to', 'bair_to', 'cmun_to', 'mun_to', 'cep_to', 'uF_to', 'cpAis_to', 'pAis_to', 'doc_rem', 'iE_rem', 'nom_rem', 'fan_rem', 'fone_rem', 'email_rem', 'rua_rem', 'n_rem', 'cpl_rem', 'bair_rem', 'cmun_rem', 'mun_rem', 'cep_rem', 'uF_rem', 'cPais_rem', 'xPais_rem', 'doc_exp', 'iE_exp', 'nom_exp', 'fan_exp', 'fone_exp', 'email_exp', 'rua_exp', 'n_exp', 'cpl_exp', 'bair_exp', 'cmun_exp', 'mun_exp', 'cep_exp', 'uF_exp', 'cPais_exp', 'xPais_exp', 'doc_rec', 'iE_rec', 'nom_rec', 'fan_rec', 'fone_rec', 'email_rec', 'rua_rec', 'n_rec', 'cpl_rec', 'bair_rec', 'cmun_rec', 'mun_rec', 'cep_rec', 'uF_rec', 'cPais_rec', 'xPais_rec', 'doc_dest', 'iE_dest', 'nom_dest', 'fan_dest', 'fone_dest', 'email_dest', 'rua_dest', 'n_dest', 'cpl_dest', 'bair_dest', 'cmun_dest', 'mun_dest', 'cep_dest', 'uF_dest', 'cPais_dest', 'xPais_dest', 'vPrest', 'vRec', 'cst_csosn', 'red_bc', 'bc_icms', 'alq_icms', 'v_icms', 'vBCstRet', 'vICMSret', 'alq_ICMSret', 'credST', 'redBCoutraUF', 'vBCoutraUF', 'alq_OutraUF', 'vICMSoutraUF', 'indSN', 'vTotTribICMS', 'infAdFisc', 'vBCUFfim', 'alqPCPUFfim', 'alqUFfim', 'alqInt', 'vFCPUFfim', 'vICMSUFfim', 'vICMSUFini', 'vCarga', 'proPred', 'outCat', 'cUn', 'tpMed', 'qtdCarga', 'vCargaAverb', 'nFat', 'vOrig', 'vDesc', 'vLiq', 'rntrc', 'data_importacao', 'usuario')
+
+
+        qtd_cte = ','.join(map(str, '?'*147))
+
+        query = f"""INSERT INTO cte{var_cte} VALUES({qtd_cte})"""
+
+        try:
+            cursor = self.connection.cursor()
+            cursor.execute(query, args)
+            self.connection.commit()
+            
+        except AttributeError:
+            print('Erro ao importar cte')
+    
+    def insert_docs_cte(self, *args):
+        var_docs = ('chave', 'chave_trans', 'pin', 'data_importacao', 'usuario')
+        qtd_docs = ','.join(map(str, '?'*5))
+
+        query = f"""INSERT INTO doc_trans{var_docs} VALUES({qtd_docs})"""
+
+        try:
+            cursor = self.connection.cursor()
+            cursor.execute(query, args)
+            self.connection.commit()
+            
+        except AttributeError:
+            print('Erro ao importar documentos transportados pela cte')
+
+    def insert_dupl_cte(self, *args):
+        var_dpl_cte = ('chave', 'ndup', 'dvenc', 'vdup', 'data_importacao', 'usuario')
+        qtd_dpl = ','.join(map(str, '?'*5))
+
+        query = f"""INSERT INTO dpl_cte{var_dpl_cte} VALUES({qtd_dpl})"""
+
+        try:
+            cursor = self.connection.cursor()
+            cursor.execute(query, args)
+            self.connection.commit()
+            
+        except AttributeError:
+            print('Erro ao importar duplicatas da cte')
     
     def lista_produtos(self):
         try:
@@ -407,13 +638,30 @@ class DataBase():
         except:
             return 'Não existe'
 
+    def check_cte(self, chave):
+        try:
+            cursor = self.connection.cursor()
+            cursor.execute(f"""SELECT * FROM cte WHERE chave = '{chave}'""")
+            cont = cursor.fetchall()
+            if cont[0][0] == chave:
+                return 'Existe'
+            else:
+                return 'Não existe'
+
+        except:
+            return 'Não existe'
+
 
 if __name__ == '__main__':
 
     db = DataBase()
     db.conecta()
-    if db.check_nota('11220110486453000123550010000007891235243511') == 'Existe':
-        print('conectiou')
+    # db.create_table_cte()
+    # db.create_doc_cte()
+    # db.create_dpl_cte()
+
+    #if db.check_nota('11220110486453000123550010000007891235243511') == 'Existe':
+        #print('conectiou')
     #db.insert_user('cadu', 'cadu', '123', 'Demais')
     #db.insert_nfe_faturamento('54559','559fat', '5', '2', '3', '05/01/2022', 'bbruno')
     # db.insert_nfe_produto('chaveteste', 'cod_itemteste', 'c_eanteste', 'c_barrateste', 'descricao_itemteste', 'ncmteste', 'nveteste', 'cestteste', 'cfopteste', 'un_medidateste', 'qtd_itemteste', 'vlr_unit_itemteste', 'vlr_itemteste', 
